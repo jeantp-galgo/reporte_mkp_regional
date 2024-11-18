@@ -44,6 +44,7 @@ class ReporteDiario:
         print(f"Link al archivo de reporte: {sheet_reporte.url}")
 
         # Procesar cada área
+        # Fecha personalizada                 'Fecha': ['15/11/2023'] * len(tipos_solicitud),
         for area in nombres_areas:
             reporte_diario = {
                 'Fecha': [hoy.strftime('%d/%m/%Y')] * len(tipos_solicitud),
