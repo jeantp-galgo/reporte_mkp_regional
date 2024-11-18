@@ -45,9 +45,10 @@ class ReporteDiario:
 
         # Procesar cada área
         # Fecha personalizada                 'Fecha': ['15/11/2023'] * len(tipos_solicitud),
+        # Fecha actual                        'Fecha': [hoy.strftime('%d/%m/%Y')] * len(tipos_solicitud),  # Cambiado a hoy
         for area in nombres_areas:
             reporte_diario = {
-                'Fecha': ['15/11/2024'] * len(tipos_solicitud),
+                'Fecha': [hoy.strftime('%d/%m/%Y')] * len(tipos_solicitud),  # Cambiado a hoy
                 'Tipo solicitud': tipos_solicitud,
                 'Nuevas solicitudes': [0] * len(tipos_solicitud),
                 'Total acumulado': [0] * len(tipos_solicitud),
@@ -70,8 +71,9 @@ class ReporteDiario:
             for i, tipo in enumerate(tipos_solicitud):
                 solicitudes_tipo = df[df['Tipo'] == tipo]
                 #nuevas_solicitudes = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == hoy.date()]
+                #nuevas_solicitudes = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == datetime(2024, 11, 15).date()]
                 
-                nuevas_solicitudes = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == datetime(2024, 11, 15).date()]
+                nuevas_solicitudes = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == hoy.date()]
                 # Asegúrate de que 'Fecha solicitud' no sea NaT antes de contar
                 nuevas_solicitudes = nuevas_solicitudes[nuevas_solicitudes['Fecha solicitud'].notna()]
                 reporte_diario['Nuevas solicitudes'][i] = len(nuevas_solicitudes)
