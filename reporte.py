@@ -47,7 +47,7 @@ class ReporteDiario:
         # Fecha personalizada                 'Fecha': ['15/11/2023'] * len(tipos_solicitud),
         for area in nombres_areas:
             reporte_diario = {
-                'Fecha': [hoy.strftime('%d/%m/%Y')] * len(tipos_solicitud),
+                'Fecha': ['15/11/2024'] * len(tipos_solicitud),
                 'Tipo solicitud': tipos_solicitud,
                 'Nuevas solicitudes': [0] * len(tipos_solicitud),
                 'Total acumulado': [0] * len(tipos_solicitud),
@@ -58,7 +58,7 @@ class ReporteDiario:
             # Leer datos de la hoja principal
             df = self.gs_func.leer_datos_google_sheet(nombre_hoja_principal, area)
             
-            if df.empty:
+            if df is None or df.empty:
                 print(f"No hay datos para procesar en {area}. Continuando con la siguiente área...")
                 continue
             
@@ -66,10 +66,14 @@ class ReporteDiario:
             df['Fecha solicitud'] = df['Fecha solicitud'].apply(self.normalizar_fecha)
             df['Fecha solicitud'] = pd.to_datetime(df['Fecha solicitud'], errors='coerce')
 
-            # Contar las solicitudes del día actual y acumuladas por tipo de solicitud
+            # Contar las solicitudes del 15 de noviembre de 2024
             for i, tipo in enumerate(tipos_solicitud):
                 solicitudes_tipo = df[df['Tipo'] == tipo]
-                nuevas_solicitudes = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == hoy.date()]
+                #nuevas_solicitudes = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == hoy.date()]
+                
+                nuevas_solicitudes = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == datetime(2024, 11, 15).date()]
+                # Asegúrate de que 'Fecha solicitud' no sea NaT antes de contar
+                nuevas_solicitudes = nuevas_solicitudes[nuevas_solicitudes['Fecha solicitud'].notna()]
                 reporte_diario['Nuevas solicitudes'][i] = len(nuevas_solicitudes)
 
                 # Total acumulado para este tipo de solicitud
