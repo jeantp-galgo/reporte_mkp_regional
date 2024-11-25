@@ -3,13 +3,17 @@ from gspread_dataframe import get_as_dataframe, set_with_dataframe
 import gspread
 from utils.utils import *
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class google_sheet_funciones:
     def __init__(self):
         self.client = conexion.conectarse_google_sheet()
 
     def otorgar_permisos_google_sheet(self, new_sheet):
-        email = 'jtrujillo@galgo.com'
+        email = os.getenv("EMAIL")
         new_sheet.share(email, perm_type='user', role='writer')
         return f"Permisos dados al correo: {email}"
 

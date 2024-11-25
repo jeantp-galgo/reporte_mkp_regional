@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import gspread
 from google_sheet.utils import google_sheet_funciones
 
@@ -30,8 +30,13 @@ class ReporteDiario:
             'Cambiar nombre', 'Sustituir', 'Despublicar (auto)', 'Otro'
         ]
         
-        hoy = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        print(f"Fecha actual: {hoy.strftime('%d/%m/%Y')}")
+        # Obtener fecha de ayer
+        # hoy = datetime.strptime('22/11/2023', '%d/%m/%Y')  # Cambiado a la fecha específica
+        # hoy = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        hoy = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        print(f"Fecha del reporte: {hoy.strftime('%d/%m/%Y')}")
+        print("\nPara usar una fecha específica, modifica la línea de código así:")
+        print("hoy = datetime.strptime('DD/MM/YYYY', '%d/%m/%Y')")
 
         # Crear o seleccionar el reporte principal
         try:
@@ -47,44 +52,49 @@ class ReporteDiario:
         # Fecha personalizada                 'Fecha': ['15/11/2023'] * len(tipos_solicitud),
         # Fecha actual                        'Fecha': [hoy.strftime('%d/%m/%Y')] * len(tipos_solicitud),  # Cambiado a hoy
         for area in nombres_areas:
+            # Inicializa el diccionario del reporte
             reporte_diario = {
-                'Fecha': [hoy.strftime('%d/%m/%Y')] * len(tipos_solicitud),  # Cambiado a hoy
-                'Tipo solicitud': tipos_solicitud,
+                'Fecha': [hoy.strftime('%d/%m/%Y')] * len(tipos_solicitud),  # Fecha de generación del reporte
                 'Nuevas solicitudes': [0] * len(tipos_solicitud),
+                'Tipo solicitud': tipos_solicitud,
                 'Total acumulado': [0] * len(tipos_solicitud),
-                'Total publicadas': [0] * len(tipos_solicitud),
-                'Total restantes': [0] * len(tipos_solicitud)
+                'Total restantes': [0] * len(tipos_solicitud),  # Inicializa la columna "Total restantes"
             }
-            
+
+            # Agregar columnas para cada estado
+            for estado in estados:
+                reporte_diario[estado] = [0] * len(tipos_solicitud)
+
             # Leer datos de la hoja principal
             df = self.gs_func.leer_datos_google_sheet(nombre_hoja_principal, area)
             
             if df is None or df.empty:
                 print(f"No hay datos para procesar en {area}. Continuando con la siguiente área...")
                 continue
-            
+
             # Normalizar las fechas en la columna 'Fecha solicitud'
             df['Fecha solicitud'] = df['Fecha solicitud'].apply(self.normalizar_fecha)
             df['Fecha solicitud'] = pd.to_datetime(df['Fecha solicitud'], errors='coerce')
 
-            # Contar las solicitudes del 15 de noviembre de 2024
+            # Procesar cada tipo de solicitud
             for i, tipo in enumerate(tipos_solicitud):
+                # Filtrar las solicitudes del tipo actual
                 solicitudes_tipo = df[df['Tipo'] == tipo]
-                #nuevas_solicitudes = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == hoy.date()]
-                #nuevas_solicitudes = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == datetime(2024, 11, 15).date()]
-                
-                nuevas_solicitudes = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == hoy.date()]
-                # Asegúrate de que 'Fecha solicitud' no sea NaT antes de contar
-                nuevas_solicitudes = nuevas_solicitudes[nuevas_solicitudes['Fecha solicitud'].notna()]
-                reporte_diario['Nuevas solicitudes'][i] = len(nuevas_solicitudes)
 
                 # Total acumulado para este tipo de solicitud
                 reporte_diario['Total acumulado'][i] = len(solicitudes_tipo)
 
-                # Contar las publicadas y calcular el total restante
-                publicadas = solicitudes_tipo[solicitudes_tipo['Estado'] == 'Publicada']
-                reporte_diario['Total publicadas'][i] = len(publicadas)
-                reporte_diario['Total restantes'][i] = reporte_diario['Total acumulado'][i] - reporte_diario['Total publicadas'][i]
+                # Filtrar las solicitudes creadas hoy
+                nuevas_solicitudes_hoy = solicitudes_tipo[solicitudes_tipo['Fecha solicitud'].dt.date == hoy.date()]
+                reporte_diario['Nuevas solicitudes'][i] = len(nuevas_solicitudes_hoy)
+
+                # Contar las solicitudes para cada estado
+                for estado in estados:
+                    solicitudes_estado = solicitudes_tipo[solicitudes_tipo['Estado'] == estado]
+                    reporte_diario[estado][i] = len(solicitudes_estado)
+
+                # Calcular "Total restantes" después de contar "Publicada"
+                reporte_diario['Total restantes'][i] = reporte_diario['Total acumulado'][i] - reporte_diario['Publicada'][i]
 
             # Crear el DataFrame del reporte diario para esta área
             reporte_diario_df = pd.DataFrame(reporte_diario)
